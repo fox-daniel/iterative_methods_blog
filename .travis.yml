@@ -13,4 +13,4 @@ before_script:
   - cargo install-update -a
 
 script:
-  - mdbook build iterative_methods_blog/ && mdbook test iterative_methods_blog/
+  - mdbook build ./iterative_methods_blog/ && mdbook test ./iterative_methods_blog/
