@@ -2,7 +2,17 @@
 
 This is the third post in the series presenting the iterative_methods_in_rust crate. You may want to read the [first](http://daniel-vainsencher.github.io/book/iterative_methods_part_1.html) or [second](http://daniel-vainsencher.github.io/book/iterative_methods_part_2.html) by [Daniel Vainsencher](https://github.com/daniel-vainsencher) before reading this post.
 
-Reservoir sampling allows for an up-to-date and relatively low cost sample of a large stream of data of possibly unknown size. For example, suppose you want to maintain an up to date sample of tweets from a twitter feed in order to calculate statistics, but crunching the stastics on all of the streaming tweets might be too computationally costly. Reservoir sampling is a way of maintaining a sample whose distribution mirrors that of the stream (up to the point sampled).
+This post describes how the Iterative Methods in Rust crate facilitates easy reservoir sampling as part of your iterative method of choice. [Reservoir sampling](https://en.wikipedia.org/wiki/Reservoir_sampling) produces an up-to-date and relatively low cost sample of a large stream of data of possibly unknown size. For example, suppose you want to maintain an up-to-date sample of tweets from a twitter feed in order to calculate statistics, but that including every tweet in the computations is too costly. A reservoir sample of the tweets will have a distribution that approximates the distribution of the stream (up to the point sampled) but, is smaller and so allows for cheaper computations.
+
+## Outline of the Post
+- The UI for reservoir samples
+- Examples on toy data demonstrating some of the properties of reservoir sampling
+	- Approximating the mean of the full data stream
+	- Approximating the distribution
+- The algorithmic implementation
+- Testing the implementation 
+
+<!-- 
 
 Here is some code I typed into the md file:
 ```rust, ignore
@@ -17,4 +27,4 @@ Here is some code referenced from a file:
 
 New content appears when pushed to origin?
 
-With mathjax we can format inline equations \\( p = \frac{log m}{log n}\\) and block equations  \\[ p = \frac{log m}{log n}\\]
+With mathjax we can format inline equations \\( p = \frac{log m}{log n}\\) and block equations  \\[ p = \frac{log m}{log n}\\] -->
