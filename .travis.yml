@@ -22,7 +22,9 @@ script:
 
 deploy:
   provider: pages
-  skip-cleanup: true
+  strategy: git
+  edge: true
+  cleanup: false
   github-token: $GITHUB_TOKEN
   local-dir: ./
   keep-history: false
