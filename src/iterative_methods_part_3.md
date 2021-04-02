@@ -14,3 +14,5 @@ Here is some code from a file:
 ```
 
 New content appears when pushed to origin?
+
+For inline equations such as \\( p = \frac{log m}{log n}\\) and block equations such as \\[ p = \frac{log m}{log n}\\]
