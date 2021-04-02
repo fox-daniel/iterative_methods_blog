@@ -12,3 +12,5 @@ Here is some code from a file:
 ```rust, ignore
 {{#include res_sampling_example.rs:28:30}}
 ```
+
+New content appears when pushed to origin?
