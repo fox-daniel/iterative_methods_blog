@@ -3,4 +3,4 @@ I am transitioning to a career in data science and engineering. You can find me 
 - [GitHub](https://github.com/fox-daniel)
 - [ResearchGate](https://www.researchgate.net/profile/Daniel_Fox21/research)
 
-Previously I have worked as a mathematician, educator, and [composer](thoughtstoodefinite.com).
+Previously I have worked as a mathematician, educator, and [composer](https://thoughtstoodefinite.com).
