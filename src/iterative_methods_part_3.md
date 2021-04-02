@@ -12,7 +12,7 @@ This post describes how the Iterative Methods in Rust crate facilitates easy res
 - The algorithmic implementation
 - Testing the implementation 
 
-![The mean of the reservoir tracks the mean of the stream:](/images/reservoir_and_stream_means.png "Reservoir and Stream Means")
+![The mean of the reservoir tracks the mean of the stream in the following figure.](/src/images/reservoir_and_stream_means.png "Reservoir and Stream Means")
 
 
 <!-- 
