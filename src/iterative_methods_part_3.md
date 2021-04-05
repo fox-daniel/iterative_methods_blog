@@ -21,7 +21,7 @@ Here I will describe the basic idea of the algorithm behind reservoir sampling; 
 
 The basic UI is as follows. Suppose that `stream` is some StreamingIterator. When we adapt that iterator using `reservoir_iterable()`, the items of the new StreamingIterator are now reservoir samples. Currently, a reservoir iterable is a `Vec<T>`.
 
-```
+```rust, ignore
 let res_iter = reservoir_iterable(stream, capacity, None);
 while let Some(item) = res_iter.next() {
 	// do stuff with each reservoir
