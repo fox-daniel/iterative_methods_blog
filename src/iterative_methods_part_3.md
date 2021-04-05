@@ -14,6 +14,14 @@ This post describes how the Iterative Methods in Rust crate facilitates easy res
 
 ![The mean of the reservoir tracks the mean of the stream in the following figure.](reservoir_and_stream_means.png "Reservoir and Stream Means")
 
+Here is the same image embedded using an iframe:
+
+<iframe id=iframe_embed style="border:none;" src="reservoir_histograms_initial_final.html" height="600" width="800" title="Initial and Final Stream Distributions"> </iframe>
+
+And an animation:
+
+<iframe id=iframe_embed style="border:none;" src="reservoir_histogram_animation.html" height="600" width="800" title="Reservoir Distribution Approximate Stream Distribution"> </iframe>
+
 
 <!-- 
 
