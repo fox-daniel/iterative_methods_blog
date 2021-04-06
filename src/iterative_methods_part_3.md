@@ -3,6 +3,11 @@
 <!-- Rework examples: 1) histogram visualization. 2) means using same data as histogram example, but only exporting means to yaml. Ideally, the means would be sent to a Dash/Plotly webapp that live updates as the code runs-->
 
 <!-- To do:
+- Example 2:
+	- use normal distr's stream
+	- within iteration, calculate means of reservoirs and index for portion of stream used 
+	- save means, index to yaml
+- deal with step size -- remove or discuss 
 - add captions to figures
 - format figures
 - make graphs resize on mobile -- remove zoom and other interactive features from Plotly
