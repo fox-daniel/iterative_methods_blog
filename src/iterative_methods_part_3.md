@@ -25,12 +25,14 @@ Here I will describe the basic idea of the algorithm behind reservoir sampling; 
 - The UI for reservoir samples
 - Example: Reservoir Histograms: Visualizing the Evolving Distribution  
 - Example: Reservoir Means: Estimating the Evolving Mean
+- Yaml, StepBy and making the Visualizations
 - Testing the implementation 
 
 ## The UI for Reservoir samples using the `Iterative Methods in Rust` crate 
 
 The UI uses adaptors to transform the behavior of `StreamingIterator`s. Suppose that `stream` is a `StreamingIterator` with items of type `T`. We adapt that iterator using `reservoir_iterable()`, so that each item of the new `StreamingIterator` is a `Vec<T>`, where the vector holds a reservoir sample. The number of items in the vector is known as the capacity.
 ```rust, ignore
+let capacity = 500;
 let res_iter = reservoir_iterable(stream, capacity, None);
 while let Some(item) = res_iter.next() {
 	// do stuff with each reservoir;
@@ -55,40 +57,40 @@ The reservoir sample starts off approximating the initial normal distribution bu
 
 [This needs to be swtiched to use the means of the above.]
 
-Let's create a stream of data of the form `[0,..,0,1,..,1]` with 500 0's and 500 1's. Let's work with reservoir sampling using a capacity of 50. Because the first 50 items in the stream are all 0, our initial reservoir is just 50 0's. As the stream is processed, we'll occassionaly update the reservoir sample. Eventually we'll start processing 1's and the will begin to enter the reservoir sample. The ratio of 1's to 0's in our reservoir should be close to the ratio of 1's to 0's that have been processed so far. Therefore, at the end of the whole stream we expect to have roughly 25 0's and 25 1's.
+Building on the previous example, suppose that we want to track how the mean of the stream evolves. Reservoir sampling allows us to make cheaper computations (that is, faster and using less memory) to estimate the mean as the stream is processed. The Iterative Methods library allows us to use the kind of flexible adaptors you are used to from Rust's `Iterator`s to accomplish this. We'll plot the reservoir means vs. the true means of the portion of the stream that was sampled. In order to know which portion of the stream has been sampled for each reservoir, we'll prepare the stream by enumerating its items with the `enumerate()` adaptor. This wraps each item of a `StreamingIterator` in a `Numbered {count, item}` struct that contains the original item and the index of the item. All of the adaptors are lazy, so the enumeration is added on the fly as the stream is processed. We'll also use the `write_yaml_documents()` adaptor to write the mean and index pairs to file.  
 
-To create a sequence of reservoir samples we can use the following steps:
-- pack the data into a StreamingIterator
-- adapt this using a ReservoirIterable: now calling `.next()` on the iterator returns reservoir samples instead of samples from the stream
-- adapt to write the reservoirs to Yaml
-- run the iteration. 
+Here is the code that accomplishes this. The code is modular; once the data stream exists we adapt, adapt, adapt, in whichever sequence is currently useful. Again, we suppose that `stream` is our `StreamingIterator` full of float samples from the pair of distributions as described above. As before, after the `reservoir_iterable()` the items are reservoir samples, and after the `map` adaptor they are `Numbered` structs consisting of the mean of the reservoir and the index indicating how much of the stream was sampled to obtain that reservoir.   
+```rust, ignore
+let stream = enumerate(stream);
+let stream = reservoir_iterable(stream, capacity, None);
+let stream = stream.map(|reservoir| {
+    let max_index = reservoir
+        .iter()
+        .map(|numbered| numbered.count)
+        .max()
+        .unwrap();
+    let mean: f64 = reservoir
+        .iter()
+        .map(|numbered| numbered.item.unwrap())
+        .sum();
+    let mean = mean / (capacity as f64);
+    Numbered {
+        count: max_index,
+        item: Some(mean),
+    }
+});
+let mut stream = write_yaml_documents(stream, reservoir_means_file.to_string())
+        .expect("Create File and initialize yaml iter failed.");
+while let Some(item) = stream.next() {
+	// 
+}
+```
 
-Here is the code that accomplishes this. The code is modular; once the data stream exists we adapt, adapt, adapt, in whichever sequence is currently useful. First we synthesize the data for the example:
-```rust, ignore
-let capacity = 50;
-let stream_length = 1000;
-// Create an Iterator of 500 0's
-let initial_iter = iter::repeat(initial_value).take(stream_length / 2);
-// Create an Iterator of 500 1's
-let final_iter = iter::repeat(final_value).take(stream_length / 2);
-// Chain them together so that the 1's follow the 0's
-let stream = initial_iter.chain(final_iter);
-// Convert to a StreamingIterator
-let stream = convert(stream);
-```
-Now, we turn to reservoir sampling and writing the data to file: 
-```rust, ignore
-// Create a Reservoir Sample Iterator
-let res_iter = reservoir_iterable(stream, capacity, None);
-// Use another adaptor to write the reservoirs to Yaml files
-let yaml_iter = write_yaml_documents(res_iter, "file/path".to_string()).expect("Give an error message if there is a problem");
-while let Some(item) = res_iter.next() {}
-```
 
 With the sequence of reservoir samples written to a Yaml file we can now visualize or analyze the reservoirs and compare them to the stream. For example, let's compare the mean of the reservoir and the mean of the portion of the stream from which the reservoir sample was drawn. In the figure below, we see that the mean of the reservoir does a nice job, at least visually speaking, of approximating the stream. (The analytics and visualizations were produced using Python and Plotly.) [Calculate stats for the final reservoir mean over a bunch of runs.]
 
 
-![The mean of the reservoir tracks the mean of the stream in the following figure.](reservoir_and_stream_means.png "Reservoir and Stream Means")
+![The mean of the reservoir tracks the mean of the stream in the following figure.](reservoir_means.png "Reservoir and Stream Means")
 
 <!-- 
 
