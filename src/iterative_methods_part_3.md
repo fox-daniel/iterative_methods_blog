@@ -7,6 +7,7 @@
 - move counter into the loop
 - add captions to figures
 - format figures
+- animation: use correct speed for auto start
 - make graphs resize on mobile -- remove zoom and other interactive features from Plotly
 - Iterator vs. Iterable -> reconcile in blog and in library
 - switch Numbered to have 'index' field instead of 'count'?
@@ -59,30 +60,32 @@ Here is the code that accomplishes this. The code is modular; once the data stre
 ```rust, ignore
 let stream = enumerate(stream);
 let stream = reservoir_iterable(stream, capacity, None);
-let stream = stream.map(|reservoir| {
-    // find the maximum index appearing in the reservoir
-    let max_index = reservoir
-        .iter()
-        .map(|numbered| numbered.count)
-        .max()
-        .unwrap();
-    // calculate the mean of the reservoir
-    let mean: f64 = reservoir
-        .iter()
-        .map(|numbered| numbered.item.unwrap())
-        .sum();
-    let mean = mean / (capacity as f64);
-    // return the maximum index and mean and forget the reservoir
-    Numbered {
-        count: max_index,
-        item: Some(mean),
-    }
-});
+let stream = stream.map(reservoir_mean_and_max_index);
 while let Some(item) = stream.next() {
 	// you could do things here, but probably it is more 
 	//convenient to use adaptors to accomplish your goals
 }
 ```
+The `map` adaptor uses a named closure to compute the mean and maximum index for each reservoir. Since the reservoir is a `Vec<Numbered<f64>>`, we use standard Rust `Iterator` methods. We need to extract the `count` field to update the maximum index present in the reservoir and expose the `item` field that has the value of the sample so we can compute the mean.  
+```rust, ignore
+let reservoir_mean_and_max_index = |reservoir: &Vec<Numbered<&f64>>| -> Numbered<f64> {
+    let mut max_index = 0i64;
+    let mean: f64 = reservoir
+        .iter()
+        .map(|numbered| 
+            {
+            max_index = max(max_index, numbered.count);
+            numbered.item.unwrap()
+            })
+        .sum();
+    let mean = mean / (capacity as f64);
+    Numbered {
+        count: max_index,
+        item: Some(mean),
+    }
+};
+```
+The idiomatic use of adaptors for Rust `Iterators` that you know and love can be applied to more complex iterative methods, such as Reservoir Sampling: we abstract all the complexities to adaptors and closures in this example, keeping the work flow of the iterative method clear.
 
 Now let's visuallly compare the means of the reservoirs and the means of the portions of the stream from which the reservoir sample was drawn. In the figure below, we see that, informally speaking, the mean of the reservoir does a nice job of approximating the stream. 
 
@@ -95,7 +98,7 @@ Comment on the number of computations peformed with res sampling compared to the
 
 ## Yaml, StepBy and making the Visualizations
 
-In order to emphasize the ease and flexibility which adaptors offer for implementing iterative methods, let's take a quick look at how we manipulated the stream to obtain the data needed for the visualizations in this blog post. The data needed for all three visualizations was written to Yaml files using only a single pass through the stream. We begin with a `stream` of floats. We `enumerate()` it so that we know the index of samples. We want to make computations on the full stream to compare it to reservoir sampling, so we adapt with `write_yaml_documents` to save the indexed stream for later. (This data is used to create the histograms of the initial and final distributions.) Wait, but we also want reservoir samples! Writing to Yaml is a side effect, it passes through the items that it was fed. So, instead of creating another copy of the data we just keep adapting. We adapt with `reservoir_iterable` to convert items from index-float pairs to vectors containing reservoir samples. The plots were too crowded initially, so I did not want to keep every reservoir sample. This is easy using the `step_by` adaptor: it only returns an item (at this point an item is a reservoir sample) every k-steps. Next, adapt to write the reservoirs to Yaml for the animation of the histograms (Figure 2). Those adaptations produce the data in Yaml files that were needed for the histogram animation and the histograms of the initial and full stream. We're not done yet, we still need to produce the means. So we used the `map` adaptor to convert items from reservoir samples to `Numbered{maximum index, reservoir mean}`. Then these are written to Yaml so that we can create Figure 3. Then finally, the only thing we do inside the loop is count the total number of reservoir samples that were made. 
+In order to emphasize the ease and flexibility which adaptors offer for implementing iterative methods, let's take a quick look at how we manipulated the stream to obtain the data needed for the visualizations in this blog post. The data needed for all three visualizations was written to Yaml files using only a single pass through the stream. We begin with a `stream` of floats. We `enumerate()` it so that we know the index of samples. We want to make computations on the full stream to compare it to reservoir sampling, so we adapt with `write_yaml_documents` to save the indexed stream for later. (This data is used to create the histograms of the initial and final distributions.) Wait, but we also want reservoir samples! Writing to Yaml is a side effect, it passes through the items that it was fed. So, instead of creating another copy of the data we just keep adapting. We adapt with `reservoir_iterable` to convert items from index-float pairs to vectors containing reservoir samples. The plots were too crowded initially, so I did not want to keep every reservoir sample. This is easy using the `step_by` adaptor: it only returns an item (at this point an item is a reservoir sample) every k-steps. Next, adapt to write the reservoirs to Yaml for the animation of the histograms (Figure 2). Those adaptations produce the data in Yaml files that were needed for the histogram animation and the histograms of the initial and full stream. We're not done yet, we still need to produce the means. So we used the `map` adaptor to convert items from reservoir samples to `Numbered{maximum index, reservoir mean}` (see the above discussion of the closure `reservoir_mean_and_max_index`). Then these are written to Yaml so that we can create Figure 3. Then finally, the only thing we do inside the loop is count the total number of reservoir samples that were made. 
 
 ```rust, ignore
 let stream = enumerate(stream);
@@ -105,22 +108,7 @@ let stream = reservoir_iterable(stream, capacity, None);
 let stream = step_by(stream, 20);
 let stream = write_yaml_documents(stream, reservoir_samples_file.to_string())
     .expect("Create File and initialize yaml iter failed.");
-let stream = stream.map(|reservoir| {
-    let max_index = reservoir
-        .iter()
-        .map(|numbered| numbered.count)
-        .max()
-        .unwrap();
-    let mean: f64 = reservoir
-        .iter()
-        .map(|numbered| numbered.item.unwrap())
-        .sum();
-    let mean = mean / (capacity as f64);
-    Numbered {
-        count: max_index,
-        item: Some(mean),
-    }
-});
+let stream = stream.map(reservoir_mean_and_max_index);
 let mut stream = write_yaml_documents(stream, reservoir_means_file.to_string())
     .expect("Create File and initialize yaml iter failed.");
 // num_res is used in the python script for visualizations to initialize the size of the array that will hold that data to visualize.
