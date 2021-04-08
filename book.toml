@@ -7,3 +7,6 @@ title = "Iterative Methods Blog"
 
 [output.html]
 mathjax-support = true
+default-theme = "coal"
+preferred-dark-theme = "navy"
+
