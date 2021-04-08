@@ -3,10 +3,10 @@
 <!-- Rework examples: 1) histogram visualization. 2) means using same data as histogram example, but only exporting means to Yaml. Ideally, the means would be sent to a Dash/Plotly webapp that live updates as the code runs-->
 
 <!-- To do:
-- add captions to figures
 - format figures
 - animation: use correct speed for auto start
 - make graphs resize on mobile -- remove zoom and other interactive features from Plotly
+- use font so that `Iterator`s has code and non-code same size.
 - Iterator vs. Iterable -> reconcile in blog and in library
 - switch Numbered to have 'index' field instead of 'count'?
 
@@ -94,9 +94,8 @@ The idiomatic use of adaptors for Rust `Iterators` that you know and love can be
 
 Now let's visuallly compare the means of the reservoirs and the means of the portions of the stream from which the reservoir sample was drawn. In the figure below, we see that, informally speaking, the mean of the reservoir does a nice job of approximating the stream. 
 
-
-![The mean of the reservoir tracks the mean of the stream in the following figure.](reservoir_means.png "Reservoir and Stream Means")
-<figcaption>Figure 3</figcaption>
+<iframe id=iframe_embed style="border:none;" src="reservoir_means.html" height="600" width="900" title="Reservoir Distribution Approximate Stream Distribution"> </iframe>
+<figcaption>Figure 3. The mean of the reservoir tracks the mean of the stream in the following figure.</figcaption>
 
 <!-- Calculate stats for the final reservoir mean over a bunch of runs. 
 Comment on the number of computations peformed with res sampling compared to the full computation. The memory use for this iteration is proportional to the size of the capacity of the reservoir, relatively small compared to -->
