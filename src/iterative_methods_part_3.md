@@ -3,14 +3,31 @@
 <!-- Rework examples: 1) histogram visualization. 2) means using same data as histogram example, but only exporting means to Yaml. Ideally, the means would be sent to a Dash/Plotly webapp that live updates as the code runs-->
 
 <!-- To do:
-- format figures
-- animation: use correct speed for auto start
-- make graphs resize on mobile -- remove zoom and other interactive features from Plotly
 - use font so that `Iterator`s has code and non-code same size.
 - Iterator vs. Iterable -> reconcile in blog and in library
 - switch Numbered to have 'index' field instead of 'count'?
+-->
+
+<!-- 
+- The animation seems to stay at the same initial distribution for about 12 seconds, and then move towards over about 4 seconds, which is surprising give the 1/4 and then 3/4 description of the stream. Perhaps there is a bug somewhere?
+	- I don't think it is a bug: samples are added less frequently as the stream is processed, so a lot of change happens between the later reservoir updates. I think is evidenced in the spacing of the plot of means: super crowded initially and then more spaced out. But I could be wrong.
+- I think in the mean computation,  Iterator's `scan` (https://doc.rust-lang.org/std/iter/struct.Scan.html) might be better fit than `map`; unfortunately it does not seem to be supported by StreamingIterator yet.
+	- yup. but not going to implement this now.
+- The mean computation has a "wrong" computational complexity: for every single element entered into the reservoir, we scan the whole reservoir. 
+	- yes. i struggled to find a better example that would not take a lot of effort and failed.
+- Makes me wonder if we should generalize the reservoir to support incremental updates by allowing a function to be passed in that is called on every update, receives the new element and the element that is being removed and has a chance to update some annotation (such as the sum and latest sample number)
+	- that could be good, but I would like to read up on applications first to understand what the needs are.
+- More short term, at the time that you introduce the mean and max index and throughout the discussion of it until the relevant plot, reader has no idea why the max index is necessary. Perhaps plot first and then code that generates it?
+	- DO: yup, I struggled with that. I am not doing anything yet because I may drop the means example.
+- The paragraph after code block 3 feels a bit disconnected in style from the preceding discussion of reservoir interface, despite summarizing it.
+	- DO: good point. will improve.
+- I would mention somewhere that the mean itself is much cheaper to compute in a streaming way than the reservoir, but that this approach applies to other computations and mean is just an example.
+	- will do if the means example remains.
+- "In order to emphasize the ease and flexibility": I would replace with the more direct "How did we make these plots, you ask? why, some more generally useful adaptors, of course!" Emphasize what the adaptors are, other applications for them, and how we create much of the functionality from these reusable adaptors, with a little one-off glue code.
+	- phrase changed. DO: follow through on this comment.
 
 -->
+
 # Iterative Methods: Reservoir Sampling
 
 This is the third post in the series presenting the iterative_methods_in_rust crate. You may want to read the [first](http://daniel-vainsencher.github.io/book/iterative_methods_part_1.html) or [second](http://daniel-vainsencher.github.io/book/iterative_methods_part_2.html) by [Daniel Vainsencher](https://github.com/daniel-vainsencher) before reading this post.
@@ -110,7 +127,7 @@ Comment on the number of computations peformed with res sampling compared to the
 
 ## Yaml, StepBy and making the Visualizations
 
-In order to emphasize the ease and flexibility which adaptors offer for implementing iterative methods, let's take a quick look at how we manipulated the stream to obtain the data needed for the visualizations in this blog post. The data needed for all three visualizations was written to Yaml files using only a single pass through the stream. We begin with a `stream` of floats. We `enumerate()` it so that we know the index of samples. We want to make computations on the full stream to compare it to reservoir sampling, so we adapt with `write_yaml_documents` to save the indexed stream for later. (This data is used to create the histograms of the initial and final distributions.) Wait, but we also want reservoir samples! Writing to Yaml is a side effect, it passes through the items that it was fed. So, instead of creating another copy of the data we just keep adapting. We adapt with `reservoir_iterable` to convert items from index-float pairs to vectors containing reservoir samples. The plots were too crowded initially, so I did not want to keep every reservoir sample. This is easy using the `step_by` adaptor: it only returns an item (at this point an item is a reservoir sample) every k-steps. Next, adapt to write the reservoirs to Yaml for the animation of the histograms (Figure 2). Those adaptations produce the data in Yaml files that were needed for the histogram animation and the histograms of the initial and full stream. We're not done yet, we still need to produce the means. So we used the `map` adaptor to convert items from reservoir samples to `Numbered{maximum index, reservoir mean}` (see the above discussion of the closure `reservoir_mean_and_max_index`). Then these are written to Yaml so that we can create Figure 3. Then finally, the only thing we do inside the loop is count the total number of reservoir samples that were made. 
+How did we make the visualizations, you ask? Why, by exporting the data with more adaptors! Let's take a quick look at how we manipulated the stream to obtain the data needed for the visualizations in this blog post. The data needed for all three visualizations was written to Yaml files using only a single pass through the stream. We begin with a `stream` of floats. We `enumerate()` it so that we know the index of samples. We want to make computations on the full stream to compare it to reservoir sampling, so we adapt with `write_yaml_documents` to save the indexed stream for later. (This data is used to create the histograms of the initial and final distributions.) Wait, but we also want reservoir samples! Writing to Yaml is a side effect, it passes through the items that it was fed. So, instead of creating another copy of the data we just keep adapting. We adapt with `reservoir_iterable` to convert items from index-float pairs to vectors containing reservoir samples. The plots were too crowded initially, so I did not want to keep every reservoir sample. This is easy using the `step_by` adaptor: it only returns an item (at this point an item is a reservoir sample) every k-steps. Next, adapt to write the reservoirs to Yaml for the animation of the histograms (Figure 2). Those adaptations produce the data in Yaml files that were needed for the histogram animation and the histograms of the initial and full stream. We're not done yet, we still need to produce the means. So we used the `map` adaptor to convert items from reservoir samples to `Numbered{maximum index, reservoir mean}` (see the above discussion of the closure `reservoir_mean_and_max_index`). Then these are written to Yaml so that we can create Figure 3. Then finally, the only thing we do inside the loop is count the total number of reservoir samples that were made. 
 
 ```rust, ignore
 let stream = enumerate(stream);
