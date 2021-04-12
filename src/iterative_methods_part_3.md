@@ -3,11 +3,7 @@
 <!-- Rework examples: 1) histogram visualization. 2) means using same data as histogram example, but only exporting means to Yaml. Ideally, the means would be sent to a Dash/Plotly webapp that live updates as the code runs-->
 
 <!-- To do:
-- animation should have time step proportional to amount of stream processed
-- animation time should be between 1 and 1/2 of current duration
 - means: motivate this as a demonstration of the effectiveness of RS; indicate that it is not the most efficient way to keep an updated mean of the stream. indicate that it requires knowing max_index.
-- if possible, have animated annotation with % of stream processed.
-- animation: animate stream[:i] and res[i] together?
 - animation: show initial distribution in background with high transparency?
 - use font so that `Iterator`s has code and non-code same size.
 - Iterator vs. Iterable -> reconcile in blog and in library
@@ -15,8 +11,6 @@
 -->
 
 <!-- 
-- The animation seems to stay at the same initial distribution for about 12 seconds, and then move towards over about 4 seconds, which is surprising give the 1/4 and then 3/4 description of the stream. Perhaps there is a bug somewhere?
-	- I don't think it is a bug: samples are added less frequently as the stream is processed, so a lot of change happens between the later reservoir updates. I think is evidenced in the spacing of the plot of means: super crowded initially and then more spaced out. But I could be wrong.
 - I think in the mean computation,  Iterator's `scan` (https://doc.rust-lang.org/std/iter/struct.Scan.html) might be better fit than `map`; unfortunately it does not seem to be supported by StreamingIterator yet.
 	- yup. but not going to implement this now.
 - The mean computation has a "wrong" computational complexity: for every single element entered into the reservoir, we scan the whole reservoir. 
