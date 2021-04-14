@@ -3,7 +3,6 @@
 <!-- Rework examples: 1) histogram visualization. 2) means using same data as histogram example, but only exporting means to Yaml. Ideally, the means would be sent to a Dash/Plotly webapp that live updates as the code runs-->
 
 <!-- To do:
-- remove step_by?
 - use font so that `Iterator`s has code and non-code same size.
 - Iterator vs. Iterable -> reconcile in blog and in library
 - switch Numbered to have 'index' field instead of 'count'?
@@ -16,8 +15,6 @@
 	- yes. i struggled to find a better example that would not take a lot of effort and failed.
 - Makes me wonder if we should generalize the reservoir to support incremental updates by allowing a function to be passed in that is called on every update, receives the new element and the element that is being removed and has a chance to update some annotation (such as the sum and latest sample number)
 	- that could be good, but I would like to read up on applications first to understand what the needs are.
-- More short term, at the time that you introduce the mean and max index and throughout the discussion of it until the relevant plot, reader has no idea why the max index is necessary. Perhaps plot first and then code that generates it?
-	- DO: yup, I struggled with that. I am not doing anything yet because I may drop the means example.
 - The paragraph after code block 3 feels a bit disconnected in style from the preceding discussion of reservoir interface, despite summarizing it.
 	- DO: good point. will improve.
 - I would mention somewhere that the mean itself is much cheaper to compute in a streaming way than the reservoir, but that this approach applies to other computations and mean is just an example.
@@ -41,7 +38,6 @@ Here I will describe the basic idea of the algorithm behind reservoir sampling; 
 - Example: Reservoir vs. Stream Means 
 - Example: Exporting Data for the Visualizations Using Adaptors
 - An Efficient Implementation of Reservoir Sampling
-- Testing the implementation
 
 ## The UI for Reservoir Sampling  
 
@@ -73,7 +69,7 @@ The reservoir sample starts off approximating the initial normal distribution ce
 
 <figure>
 <iframe id=iframe_embed style="border:none;" src="reservoir_histogram_animation.html" height="500" width="800" title="Reservoir Distribution Approximate Stream Distribution"> </iframe>
-<figcaption style="text-align:center;font-size:14px">Figure 2. Reservoir samples approximate the stream distribution up to the point sampled. The initial reservoir distributions approximate the initial normal distribution; by the end of the iteration the reservoir distribution approximates the distribution of the entire stream, which, in this case, is a mix of two normal distributions.  </figcaption>
+<figcaption style="text-align:center;font-size:14px">Figure 2. Reservoir samples approximate the stream distribution up to the point sampled. The initial reservoir distributions approximate the initial normal distribution; by the end of the iteration the reservoir distribution approximates the distribution of the entire stream, which, in this case, is a mix of two normal distributions. The index of the reservoir is the index for the sequence of reservoirs that are generated. After the initial reservoir is filled with the first capacity of items from the stream, each subsequent reservoir is obtained from the previous by replacing an item with a new one from the stream. The reservoir sampling algorithm randomly skips items from the stream to balance the accuracy of the reservoir sample with the efficiency of the algorithm. </figcaption>
 </figure>
 
 ## Example: Reservoir vs. Stream Means
@@ -121,7 +117,7 @@ let reservoir_mean_and_max_index = |reservoir: &Vec<Numbered<&f64>>| -> Numbered
 Now let's visuallly compare the means of the reservoirs and the means of the portions of the stream from which the reservoir sample was drawn. In the figure below, we see that, informally speaking, the mean of the reservoir does a nice job of approximating the mean of the portion of the stream that has been sampled. 
 <figure>
 <iframe  title="Reservoir and Stream Means;" id=iframe_embed style="border:none;" src="reservoir_means.html" height="400" width="700"> </iframe>
-<figcaption style="text-align:center;font-size:14px">Figure 3.</figcaption>
+<figcaption style="text-align:center;font-size:14px">Figure 3. The mean of the stream (up to the point processed) and the mean of the reservoir are compared. The reservoir means appear to give reasonable estimates of the mean of the portion of the stream that has been processed. The reservoir sampling algorithm randomly skips ahead before updating the reservoir in order to balance accuracy and efficiency. The skipping is visiable in the variable distance between markers. The mean of the stream is only shown when the reservoir is updated. </figcaption>
 </figure>
 
 <!-- Calculate stats for the final reservoir mean over a bunch of runs. 
@@ -131,14 +127,13 @@ What we see in these examples is that the idiomatic use of adaptors for Rust `It
 
 ## Example: Exporting Data for the Visualizations Using Adaptors
 
-How did we make the visualizations, you ask? Why, by exporting the data with more adaptors! Let's take a quick look at how we manipulated the stream to obtain the data needed for the visualizations in this blog post. The data needed for all three visualizations was written to Yaml files using only a single pass through the stream. We begin with a `stream` of floats. We `enumerate()` it so that we know the index of samples. We want to make computations on the full stream to compare it to reservoir sampling, so we adapt with `write_yaml_documents` to save the indexed stream for later. (This data is used to create the histograms of the initial and final distributions.) Wait, but we also want reservoir samples! Writing to Yaml is a side effect, it passes through the items that it was fed. So, instead of creating another copy of the data we just keep adapting. We adapt with `reservoir_iterable` to convert items from index-float pairs to vectors containing reservoir samples. The plots were too crowded initially, so I did not want to keep every reservoir sample. This is easy using the `step_by` adaptor: it only returns an item (at this point an item is a reservoir sample) every k-steps. Next, adapt to write the reservoirs to Yaml for the animation of the histograms (Figure 2). Those adaptations produce the data in Yaml files that were needed for the histogram animation and the histograms of the initial and full stream. We're not done yet, we still need to produce the means. So we used the `map` adaptor to convert items from reservoir samples to `Numbered{maximum index, reservoir mean}` (see the above discussion of the closure `reservoir_mean_and_max_index`). Then these are written to Yaml so that we can create Figure 3. Then finally, the only thing we do inside the loop is count the total number of reservoir samples that were made. This is used to make the visualizations.
+How did we make the visualizations, you ask? Why, by exporting the data with more adaptors! Let's take a quick look at how we manipulated the stream to obtain the data needed for the visualizations in this blog post. The data needed for all three visualizations was written to Yaml files using only a single pass through the stream. We begin with a `stream` of floats. We `enumerate()` it so that we know the index of samples. We want to make computations on the full stream to compare it to reservoir sampling, so we adapt with `write_yaml_documents` to save the indexed stream for later. (This data is used to create the histograms of the initial and final distributions.) Wait, but we also want reservoir samples! Writing to Yaml is a side effect, it passes through the items that it was fed. So, instead of creating another copy of the data we just keep adapting. We adapt with `reservoir_iterable` to convert items from index-float pairs to vectors containing reservoir samples. Next, adapt to write the reservoirs to Yaml for the animation of the histograms (Figure 2). Those adaptations produce the data in Yaml files that were needed for the histogram animation and the histograms of the initial and full stream. We're not done yet, we still need to produce the means. So we used the `map` adaptor to convert items from reservoir samples to `Numbered{maximum index, reservoir mean}` (see the above discussion of the closure `reservoir_mean_and_max_index`). Then these are written to Yaml so that we can create Figure 3. Then finally, the only thing we do inside the loop is count the total number of reservoir samples that were made. This is used to make the visualizations.
 
 ```rust, ignore
 let stream = enumerate(stream);
 let stream = write_yaml_documents(stream, population_file.to_string())
     .expect("Create File and initialize yaml iter failed.");
 let stream = reservoir_iterable(stream, capacity, None);
-let stream = step_by(stream, 20);
 let stream = write_yaml_documents(stream, reservoir_samples_file.to_string())
     .expect("Create File and initialize yaml iter failed.");
 let stream = stream.map(reservoir_mean_and_max_index);
@@ -152,8 +147,48 @@ while let Some(_item) = stream.next() {
 ```
 <figcaption style="text-align:center;">Code Block 4</figcaption>
 
+## An Efficient Implementation of Reservoir Sampling
 
+The final topic this post will cover is the implementation of reservoir sampling. The Iterative Methods in Rust library uses [*Algorithm L*](https://en.wikipedia.org/wiki/Reservoir_sampling#An_optimal_algorithm), an optimal algorithm of Kim-Hung Li. The basic idea of the algorithm is to not update the reservoir with every new item of the stream that is processed, but to randomly skip ahead before processing a new item. The cleverness resides in choosing *how much* to skip ahead. See the [research article]((https://dl.acm.org/doi/10.1145/198429.198435)) by Kim-Hung Li for the details. 
 
+To implement the algorithm in the library we want an adaptor `reservoir_iterable()` that can be applied to any `StreamingIterator`, `I`. The adaptor wraps `I` into a new struct that maintains state:
+```rust, ignore
+#[derive(Debug, Clone)]
+pub struct ReservoirIterable<I, T> {
+    it: I,
+    pub reservoir: Vec<T>,
+    capacity: usize,
+    w: f64,
+    skip: usize,
+    rng: Pcg64,
+}
+```
+The state includes the underlying `I`, the reservoir sampling which is a `Vec<T>`, and the capacity of the reservoir. Before discussing the other variables, let's not that `reservoir` is public because this part of state constitutes the items of the new `StreamingIterator` that is produced. The remaining parts of state are a weight `w`, a skip size `skip`, and a choice of a random number generator (rng). The rng can be selected when applying the adaptor or set as `None` to use the default. Selecting the rng can be important. For example, for running tests you may want to use a seeded rng so that behavior is reproducible and aids debugging. To understand the weight and skip size, let's look at the implementation of the `advance` method that is required of all `StreamingIterator`s.
+
+To create the first reservoir, we simply fill it with the first `capacity` elements. That is accomplished in the first arm of the conditional `if` statement: until the reservoir is full to capacity we add each subsequent item of the stream to it. The items added are `clone()`s of the items from the stream. 
+
+The more interesting part of the algorithm begins once the reservoir is full to capacity. Now we can see how `skip` and `w` are used. The variable `skip` tells the algorithm how far to skip ahead in the stream before selecting an item to add to the reservoir. We accomplish this using the adaptor `.nth()` that exists for both Rust's standard `Iterator`s and the `StreamingIterator`s we are working with here. Once we have selected an item to incorporate in the reservoir sample, we need to figure out where to put it. This is done by uniformly, randomly selecting an item in the reservoir which will be replaced. Then we need to update state to know how far to skip ahead next time. We update `w` according to the formulation of the algorithm: generate a random number `r` in \\((0,1)\\) and set \\( w = w * r^{\frac{1}{k}}\\). In the code, the kth root is taken in a more numerically stable way using logarithms. This new weight is then used to determine the `skip`: let `r'` be another random number in \\((0,1)\\) and set \\(skip = skip + 1 + floor \left(\frac{\log(r')}{\log(1-w)} \right)\\). 
+
+```rust, ignore
+fn advance(&mut self) {
+    if self.reservoir.len() < self.capacity {
+        while self.reservoir.len() < self.capacity {
+            if let Some(datum) = self.it.next() {
+                let cloned_datum = datum.clone();
+                self.reservoir.push(cloned_datum);
+            } else {
+                break;
+            }
+        }
+    } else if let Some(datum) = self.it.nth(self.skip) {
+        let h = self.rng.gen_range(0..self.capacity) as usize;
+        let datum_struct = datum.clone();
+        self.reservoir[h] = datum_struct;
+        self.w *= (self.rng.gen::<f64>().ln() / (self.capacity as f64)).exp();
+        self.skip = ((self.rng.gen::<f64>() as f64).ln() / (1. - self.w).ln()).floor() as usize;
+    }
+}
+```
 
 <!-- 
 
