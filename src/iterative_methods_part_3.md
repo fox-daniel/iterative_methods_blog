@@ -24,13 +24,11 @@
 
 -->
 
-# Iterative Methods: Reservoir Sampling
+# Iterative Methods in Rust: Reservoir Sampling
 
-This is the third post in the series presenting the iterative_methods_in_rust crate. You may want to read the [first](http://daniel-vainsencher.github.io/book/iterative_methods_part_1.html) or [second](http://daniel-vainsencher.github.io/book/iterative_methods_part_2.html) by [Daniel Vainsencher](https://github.com/daniel-vainsencher) before reading this post.
+This is the third post in the series presenting the Iterative Methods In Rust crate. If you haven't already, you may want to read the [first](http://daniel-vainsencher.github.io/book/iterative_methods_part_1.html) or [second](http://daniel-vainsencher.github.io/book/iterative_methods_part_2.html) post by [Daniel Vainsencher](https://github.com/daniel-vainsencher) before continuing here. As discussed in the earlier posts, the Iterative Methods in Rust library has two motivations: 1) extend the idiomatic use of iterators and adaptors in Rust to `StreamingIterator`s and 2) expand the repertoire of iterative methods readily available in the Rust ecosystem. 
 
-This post describes how the Iterative Methods in Rust crate facilitates easy reservoir sampling as part of your iterative method of choice. [Reservoir sampling](https://en.wikipedia.org/wiki/Reservoir_sampling) produces an up-to-date and relatively low cost sample of a large stream of data of possibly unknown size. For example, suppose you want to maintain an up-to-date sample of tweets from a twitter feed in order to calculate statistics, but that including every tweet in the computations is too costly. A reservoir sample of the tweets will have a distribution that approximates the distribution of the stream (up to the point sampled), but is smaller and is updated less frequently; this allows for cheaper computations of statistics about the stream.
-
-Here I will describe the basic idea of the algorithm behind reservoir sampling; in a later section I will provide the technical details. Say more...
+This post describes how the Iterative Methods in Rust crate facilitates easy reservoir sampling of a `StreamingIterator`. [Reservoir sampling](https://en.wikipedia.org/wiki/Reservoir_sampling) produces an up-to-date and relatively low cost random sample of a large stream of data. For example, suppose you want to maintain an up-to-date sample of \\(k\\) tweets from a twitter feed. At any moment, a reservoir sample of the tweets is equivalent to a random sample of \\(k\\) items from the portion of the stream that has been processed at that moment. The reservoir sampling algorithm accomplishes this without needing to know the total number of samples in the stream and it updates the sample to take into account new behavior in the data that may not have been present initially. Below we'll see how to use reservoir sampling for `StreamingIterator`s in Rust. Using animations we can see how the reservoir samples stay up-to-date as the data stream exhibits new behavior. 
 
 ## Outline of the Post
 - The UI for Reservoir Sampling
@@ -41,7 +39,7 @@ Here I will describe the basic idea of the algorithm behind reservoir sampling; 
 
 ## The UI for Reservoir Sampling  
 
-The UI uses adaptors to transform the behavior of `StreamingIterator`s. Suppose that `stream` is a `StreamingIterator` with items of type `T`. We adapt that iterator using `reservoir_iterable(stream, capacity, Rng)`, whose fields are 1) a streaming iterator, 2) the capacity or size of the reservoir sample, and 3) a choice of a random number generator. If the `Rng` is left to `None`, then the default [`rand_pcg::Pcg64`](https://rust-random.github.io/book/intro.html) is used. Each item of the returned `StreamingIterator` is a `Vec<T>`, where the vector holds a reservoir sample.   
+The UI uses adaptors to transform the behavior of `StreamingIterator`s. Suppose that `stream` is a `StreamingIterator` with items of type `T`. We adapt that iterator using `reservoir_iterable(stream, capacity, rng)`, whose fields are 1) a streaming iterator, 2) the capacity or size of the reservoir sample, and 3) a choice of a random number generator. If the `rng` is left to `None`, then the default [`rand_pcg::Pcg64`](https://rust-random.github.io/book/intro.html) is used. Each item of the returned `StreamingIterator` is a `Vec<T>`, where the vector holds a reservoir sample.   
 ```rust, ignore
 let stream = reservoir_iterable(stream, capacity, None);
 while let Some(item) = stream.next() {
@@ -74,7 +72,7 @@ The reservoir sample starts off approximating the initial normal distribution ce
 
 ## Example: Reservoir vs. Stream Means
 
-The animation in Figure 2 allows us to see how the reservoir distribution tracks the stream distribution. We can also check that the mean of the reservoir is close to the mean of the portion of the stream that has been processed. Now, if you want to compute streaming means, what follows is not the efficient way to do it. What follows allows us to check that the means of the reservoirs are behaving as expected. The Iterative Methods library allows us to use the kind of flexible adaptors you are used to from Rust's `Iterator`s to accomplish this. We'll plot the reservoir mean vs. the mean of the portion of the stream that was sampled to produce the reservoir. 
+The animation in Figure 2 allows us to see how the reservoir distribution tracks the stream distribution. We can also check that the mean of the reservoir is close to the mean of the portion of the stream that has been processed. Now, if you want to compute streaming means, what follows is not the efficient way to do it. Rather, what follows is useful for checking that the means of the reservoirs are behaving as expected. The Iterative Methods library allows us to use the kind of flexible adaptors you are used to from Rust's `Iterator`s to accomplish this. We'll plot the reservoir mean vs. the mean of the portion of the stream that was sampled to produce the reservoir. 
 
 In order to know which portion of the stream has been sampled for each reservoir, we'll prepare the stream by enumerating its items with the `enumerate()` adaptor. This wraps each item of a `StreamingIterator` in a `Numbered{count, item}` struct that contains the original item and the index of the item. All of the adaptors are lazy, so the enumeration is added on the fly as the stream is processed. With the enumeration added in, for each reservoir we can find the item with the largest index, which we'll name `max_index`. We compare the reservoir mean to the mean of the stream up to and including that index. 
 
@@ -95,7 +93,8 @@ while let Some(item) = stream.next() {
 
 The `map` adaptor uses a named closure to compute the mean and maximum index for each reservoir. Since the reservoir is a `Vec<Numbered<f64>>`, we use standard Rust `Iterator` methods. We need to extract the `count` field to update the maximum index present in the reservoir and expose the `item` field that has the value of the sample so we can compute the mean.  
 ```rust, ignore
-let reservoir_mean_and_max_index = |reservoir: &Vec<Numbered<&f64>>| -> Numbered<f64> {
+let reservoir_mean_and_max_index = |reservoir: &Vec<Numbered<&f64>>| -> Numbered<f64> 
+{
     let mut max_index = 0i64;
     let mean: f64 = reservoir
         .iter()
@@ -117,7 +116,7 @@ let reservoir_mean_and_max_index = |reservoir: &Vec<Numbered<&f64>>| -> Numbered
 Now let's visuallly compare the means of the reservoirs and the means of the portions of the stream from which the reservoir sample was drawn. In the figure below, we see that, informally speaking, the mean of the reservoir does a nice job of approximating the mean of the portion of the stream that has been sampled. 
 <figure>
 <iframe  title="Reservoir and Stream Means;" id=iframe_embed style="border:none;" src="reservoir_means.html" height="400" width="700"> </iframe>
-<figcaption style="text-align:center;font-size:14px">Figure 3. The mean of the stream (up to the point processed) and the mean of the reservoir are compared. The reservoir means appear to give reasonable estimates of the mean of the portion of the stream that has been processed. The reservoir sampling algorithm randomly skips ahead before updating the reservoir in order to balance accuracy and efficiency. The skipping is visiable in the variable distance between markers. The mean of the stream is only shown when the reservoir is updated. </figcaption>
+<figcaption style="text-align:center;font-size:14px">Figure 3. The mean of the stream (up to the point processed) and the mean of the reservoir are compared. The reservoir means appear to give reasonable estimates of the mean of the portion of the stream that has been processed. The reservoir sampling algorithm randomly skips ahead before updating the reservoir in order to balance accuracy and efficiency. The skipping is visible in the variable distance between markers. The mean of the stream is only shown when the reservoir is updated. </figcaption>
 </figure>
 
 <!-- Calculate stats for the final reservoir mean over a bunch of runs. 
@@ -127,8 +126,7 @@ What we see in these examples is that the idiomatic use of adaptors for Rust `It
 
 ## Example: Exporting Data for the Visualizations Using Adaptors
 
-How did we make the visualizations, you ask? Why, by exporting the data with more adaptors! Let's take a quick look at how we manipulated the stream to obtain the data needed for the visualizations in this blog post. The data needed for all three visualizations was written to Yaml files using only a single pass through the stream. We begin with a `stream` of floats. We `enumerate()` it so that we know the index of samples. We want to make computations on the full stream to compare it to reservoir sampling, so we adapt with `write_yaml_documents` to save the indexed stream for later. (This data is used to create the histograms of the initial and final distributions.) Wait, but we also want reservoir samples! Writing to Yaml is a side effect, it passes through the items that it was fed. So, instead of creating another copy of the data we just keep adapting. We adapt with `reservoir_iterable` to convert items from index-float pairs to vectors containing reservoir samples. Next, adapt to write the reservoirs to Yaml for the animation of the histograms (Figure 2). Those adaptations produce the data in Yaml files that were needed for the histogram animation and the histograms of the initial and full stream. We're not done yet, we still need to produce the means. So we used the `map` adaptor to convert items from reservoir samples to `Numbered{maximum index, reservoir mean}` (see the above discussion of the closure `reservoir_mean_and_max_index`). Then these are written to Yaml so that we can create Figure 3. Then finally, the only thing we do inside the loop is count the total number of reservoir samples that were made. This is used to make the visualizations.
-
+How did we make the visualizations, you ask? Why, by exporting the data with more adaptors! Let's take a quick look at how we manipulated the stream to obtain the data needed for the visualizations in this blog post. The data needed for all three visualizations was written to Yaml files using only a single pass through the stream. We begin with a `stream` of floats. We `enumerate()` it so that we know the index of samples. We want to make computations on the full stream to compare it to reservoir sampling, so we adapt with `write_yaml_documents` to save the indexed stream for later. (This data is used to create the histograms of the initial and final distributions in Figure 1.) Wait, but we also want reservoir samples! Writing to Yaml is a side effect, it passes through the items that it was fed. So we keep adapting. We adapt with `reservoir_iterable` to convert items from index-float pairs to vectors containing reservoir samples (where the items in the sample are still index-float pairs). Next, adapt to write the reservoirs to Yaml for the animation of the histograms (Figure 2). We're not done yet, we still need to produce the means. So we use the `map` adaptor to convert items from reservoir samples to `Numbered{maximum index, reservoir mean}` (see the above discussion of the closure `reservoir_mean_and_max_index`). These are written to Yaml so that we can create Figure 3. Finally, the only thing we do inside the loop is count the total number of reservoir samples that were made. This is used to make the visualizations. Here is the code:
 ```rust, ignore
 let stream = enumerate(stream);
 let stream = write_yaml_documents(stream, population_file.to_string())
@@ -147,9 +145,11 @@ while let Some(_item) = stream.next() {
 ```
 <figcaption style="text-align:center;">Code Block 4</figcaption>
 
+The visualizations were generated from the data in the Yaml files using the [Plotly](https://plotly.com/python/) module in Python. In the future we hope to switch to an entirely Rusty solution using the [Plotters](https://docs.rs/plotters/0.3.0/plotters/) crate.
+
 ## An Efficient Implementation of Reservoir Sampling
 
-The final topic this post will cover is the implementation of reservoir sampling. The Iterative Methods in Rust library uses [*Algorithm L*](https://en.wikipedia.org/wiki/Reservoir_sampling#An_optimal_algorithm), an optimal algorithm of Kim-Hung Li. The basic idea of the algorithm is to not update the reservoir with every new item of the stream that is processed, but to randomly skip ahead before processing a new item. The cleverness resides in choosing *how much* to skip ahead. See the [research article]((https://dl.acm.org/doi/10.1145/198429.198435)) by Kim-Hung Li for the details. 
+The final topic we'll cover is the implementation of reservoir sampling. The Iterative Methods in Rust library uses [*Algorithm L*](https://en.wikipedia.org/wiki/Reservoir_sampling#An_optimal_algorithm), an optimal algorithm introduced by Kim-Hung Li. The basic idea of the algorithm is to not update the reservoir with every new item of the stream that is processed, but to randomly skip ahead before processing a new item. The cleverness resides in choosing *how much* to skip ahead. See the [research article]((https://dl.acm.org/doi/10.1145/198429.198435)) by Kim-Hung Li for the details. 
 
 To implement the algorithm in the library we want an adaptor `reservoir_iterable()` that can be applied to any `StreamingIterator`, `I`. The adaptor wraps `I` into a new struct that maintains state:
 ```rust, ignore
@@ -163,7 +163,7 @@ pub struct ReservoirIterable<I, T> {
     rng: Pcg64,
 }
 ```
-The state includes the underlying `I`, the reservoir sampling which is a `Vec<T>`, and the capacity of the reservoir. Before discussing the other variables, let's not that `reservoir` is public because this part of state constitutes the items of the new `StreamingIterator` that is produced. The remaining parts of state are a weight `w`, a skip size `skip`, and a choice of a random number generator (rng). The rng can be selected when applying the adaptor or set as `None` to use the default. Selecting the rng can be important. For example, for running tests you may want to use a seeded rng so that behavior is reproducible and aids debugging. To understand the weight and skip size, let's look at the implementation of the `advance` method that is required of all `StreamingIterator`s.
+The state includes the underlying `I`, the reservoir sample which is a `Vec<T>`, and the capacity of the reservoir. Before discussing the other variables, let's note that `reservoir` is public because this part of state constitutes the items of the new `StreamingIterator` that are produced. The remaining parts of state, which are for internal use only, are a weight `w`, a skip size `skip`, and a choice of a random number generator `rng`. The rng can be selected when applying the adaptor or set as `None` to use the default. Selecting the rng can be important. For example, for running tests you may want to use a seeded rng so that behavior is reproducible and aids debugging. To understand the weight and skip size, let's look at the implementation of the `advance` method that is required of all `StreamingIterator`s.
 
 To create the first reservoir, we simply fill it with the first `capacity` elements. That is accomplished in the first arm of the conditional `if` statement: until the reservoir is full to capacity we add each subsequent item of the stream to it. The items added are `clone()`s of the items from the stream. 
 
@@ -190,6 +190,7 @@ fn advance(&mut self) {
 }
 ```
 
+The iterator-adaptor idiom popular in Rust and other modern languages provides an ergonomic way to write code. As we build a repertoire of adaptors that implement useful iterative methods, we can easily deploy them in myriad combinations to meet our engineering needs. If you try out the Iterative Methods in Rust crate, please send us feedback! 
 
 *Thanks to Daniel Vainsencher for inviting me to contribute to the **Iterative Methods In Rust** crate and for helpful feedback about this blog post and the implementation of reservoir sampling.*
 <!-- 
