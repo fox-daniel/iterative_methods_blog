@@ -167,7 +167,7 @@ The state includes the underlying `I`, the reservoir sampling which is a `Vec<T>
 
 To create the first reservoir, we simply fill it with the first `capacity` elements. That is accomplished in the first arm of the conditional `if` statement: until the reservoir is full to capacity we add each subsequent item of the stream to it. The items added are `clone()`s of the items from the stream. 
 
-The more interesting part of the algorithm begins once the reservoir is full to capacity. Now we can see how `skip` and `w` are used. The variable `skip` tells the algorithm how far to skip ahead in the stream before selecting an item to add to the reservoir. We accomplish this using the adaptor `.nth()` that exists for both Rust's standard `Iterator`s and the `StreamingIterator`s we are working with here. Once we have selected an item to incorporate in the reservoir sample, we need to figure out where to put it. This is done by uniformly, randomly selecting an item in the reservoir which will be replaced. Then we need to update state to know how far to skip ahead next time. We update `w` according to the formulation of the algorithm: generate a random number `r` in \\((0,1)\\) and set \\( w = w * r^{\frac{1}{k}}\\). In the code, the kth root is taken in a more numerically stable way using logarithms. This new weight is then used to determine the `skip`: let `r'` be another random number in \\((0,1)\\) and set \\(skip = skip + 1 + floor \left(\frac{\log(r')}{\log(1-w)} \right)\\). 
+The more interesting part of the algorithm begins once the reservoir is full to capacity. Now we can see how `skip` and `w` are used. The variable `skip` tells the algorithm how far to skip ahead in the stream before selecting an item to add to the reservoir. We accomplish this using the adaptor `.nth()` that exists for both Rust's standard `Iterator`s and the `StreamingIterator`s we are working with here. Once we have selected an item to incorporate in the reservoir sample, we need to figure out where to put it. This is done by uniformly, randomly selecting an item in the reservoir which will be replaced. Then we need to update state to know how far to skip ahead next time. We update `w` according to the formulation of the algorithm: generate a random number `r` in \\((0,1)\\) and set \\( w = w \cdot r^{\frac{1}{k}}\\). (In the code, the kth root is taken in a more numerically stable way using logarithms.) This new weight is then used to determine the `skip`: let `r'` be another random number in \\((0,1)\\) and set \\(skip = skip + 1 + \lfloor \frac{\log(r')}{\log(1-w)}  \rfloor\\). 
 
 ```rust, ignore
 fn advance(&mut self) {
@@ -190,6 +190,8 @@ fn advance(&mut self) {
 }
 ```
 
+
+*Thanks to Daniel Vainsencher for inviting me to contribute to the **Iterative Methods In Rust** crate and for helpful feedback about this blog post and the implementation of reservoir sampling.*
 <!-- 
 
 Here is some code I typed into the md file:
