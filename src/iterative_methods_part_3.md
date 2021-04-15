@@ -26,9 +26,9 @@
 
 # Iterative Methods in Rust: Reservoir Sampling
 
-This is the third post in the series presenting the Iterative Methods In Rust crate. If you haven't already, you may want to read the [first](http://daniel-vainsencher.github.io/book/iterative_methods_part_1.html) or [second](http://daniel-vainsencher.github.io/book/iterative_methods_part_2.html) post by [Daniel Vainsencher](https://github.com/daniel-vainsencher) before continuing here. As discussed in the earlier posts, the Iterative Methods in Rust library has two motivations: 1) extend the idiomatic use of iterators and adaptors in Rust to `StreamingIterator`s and 2) expand the repertoire of iterative methods readily available in the Rust ecosystem. 
+This is the third post in the series presenting the `Iterative Methods` Rust crate. If you haven't already, you may want to read the [first](http://daniel-vainsencher.github.io/book/iterative_methods_part_1.html) or [second](http://daniel-vainsencher.github.io/book/iterative_methods_part_2.html) post by [Daniel Vainsencher](https://github.com/daniel-vainsencher) before continuing here. As discussed in the earlier posts, the `Iterative Methods` crate has two motivations: 1) extend the idiomatic use of iterators and adaptors in Rust to `StreamingIterator`s and 2) expand the repertoire of iterative methods readily available in the Rust ecosystem. 
 
-This post describes how the Iterative Methods in Rust crate facilitates easy reservoir sampling of a `StreamingIterator`. [Reservoir sampling](https://en.wikipedia.org/wiki/Reservoir_sampling) produces an up-to-date and relatively low cost random sample of a large stream of data. For example, suppose you want to maintain an up-to-date sample of \\(k\\) tweets from a twitter feed. At any moment, a reservoir sample of the tweets is equivalent to a random sample of \\(k\\) items from the portion of the stream that has been processed at that moment. The reservoir sampling algorithm accomplishes this without needing to know the total number of samples in the stream and it updates the sample to take into account new behavior in the data that may not have been present initially. Below we'll see how to use reservoir sampling for `StreamingIterator`s in Rust. Using animations we can see how the reservoir samples stay up-to-date as the data stream exhibits new behavior. 
+This post describes how the `Iterative Methods` crate facilitates easy reservoir sampling of a `StreamingIterator`. [Reservoir sampling](https://en.wikipedia.org/wiki/Reservoir_sampling) produces an up-to-date and relatively low cost random sample of a large stream of data. For example, suppose you want to maintain an up-to-date sample of \\(k\\) tweets from a twitter feed. At any moment, a reservoir sample of the tweets is equivalent to a random sample of \\(k\\) items from the portion of the stream that has been processed at that moment. The reservoir sampling algorithm accomplishes this without needing to know the total number of samples in the stream and it updates the sample to take into account new behavior in the data that may not have been present initially. Below we'll see how to use reservoir sampling for `StreamingIterator`s in Rust. Using animations we can see how the reservoir samples stay up-to-date as the data stream exhibits new behavior. 
 
 ## Outline of the Post
 - The UI for Reservoir Sampling
@@ -72,7 +72,7 @@ The reservoir sample starts off approximating the initial normal distribution ce
 
 ## Example: Reservoir vs. Stream Means
 
-The animation in Figure 2 allows us to see how the reservoir distribution tracks the stream distribution. We can also check that the mean of the reservoir is close to the mean of the portion of the stream that has been processed. Now, if you want to compute streaming means, what follows is not the efficient way to do it. Rather, what follows is useful for checking that the means of the reservoirs are behaving as expected. The Iterative Methods library allows us to use the kind of flexible adaptors you are used to from Rust's `Iterator`s to accomplish this. We'll plot the reservoir mean vs. the mean of the portion of the stream that was sampled to produce the reservoir. 
+The animation in Figure 2 allows us to see how the reservoir distribution tracks the stream distribution. We can also check that the mean of the reservoir is close to the mean of the portion of the stream that has been processed. Now, if you want to compute streaming means, what follows is not the efficient way to do it. Rather, what follows is useful for checking that the means of the reservoirs are behaving as expected. The `Iterative Methods` crate allows us to use the kind of flexible adaptors you are used to from Rust's `Iterator`s to accomplish this. We'll plot the reservoir mean vs. the mean of the portion of the stream that was sampled to produce the reservoir. 
 
 In order to know which portion of the stream has been sampled for each reservoir, we'll prepare the stream by enumerating its items with the `enumerate()` adaptor. This wraps each item of a `StreamingIterator` in a `Numbered{count, item}` struct that contains the original item and the index of the item. All of the adaptors are lazy, so the enumeration is added on the fly as the stream is processed. With the enumeration added in, for each reservoir we can find the item with the largest index, which we'll name `max_index`. We compare the reservoir mean to the mean of the stream up to and including that index. 
 
@@ -149,7 +149,7 @@ The visualizations were generated from the data in the Yaml files using the [Plo
 
 ## An Efficient Implementation of Reservoir Sampling
 
-The final topic we'll cover is the implementation of reservoir sampling. The Iterative Methods in Rust library uses [*Algorithm L*](https://en.wikipedia.org/wiki/Reservoir_sampling#An_optimal_algorithm), an optimal algorithm introduced by Kim-Hung Li. The basic idea of the algorithm is to not update the reservoir with every new item of the stream that is processed, but to randomly skip ahead before processing a new item. The cleverness resides in choosing *how much* to skip ahead. See the [research article]((https://dl.acm.org/doi/10.1145/198429.198435)) by Kim-Hung Li for the details. 
+The final topic we'll cover is the implementation of reservoir sampling. The `Iterative Methods` crate uses [*Algorithm L*](https://en.wikipedia.org/wiki/Reservoir_sampling#An_optimal_algorithm), an optimal algorithm introduced by Kim-Hung Li. The basic idea of the algorithm is to not update the reservoir with every new item of the stream that is processed, but to randomly skip ahead before processing a new item. The cleverness resides in choosing *how much* to skip ahead. See the [research article]((https://dl.acm.org/doi/10.1145/198429.198435)) by Kim-Hung Li for the details. 
 
 To implement the algorithm in the library we want an adaptor `reservoir_iterable()` that can be applied to any `StreamingIterator`, `I`. The adaptor wraps `I` into a new struct that maintains state:
 ```rust, ignore
@@ -190,9 +190,9 @@ fn advance(&mut self) {
 }
 ```
 
-The iterator-adaptor idiom popular in Rust and other modern languages provides an ergonomic way to write code. As we build a repertoire of adaptors that implement useful iterative methods, we can easily deploy them in myriad combinations to meet our engineering needs. If you try out the Iterative Methods in Rust crate, please send us feedback! 
+The iterator-adaptor idiom popular in Rust and other modern languages provides an ergonomic way to write code. As we build a repertoire of adaptors that implement useful iterative methods, we can easily deploy them in myriad combinations to meet our engineering needs. If you try out the `Iterative Methods` crate, please send us feedback! 
 
-*Thanks to Daniel Vainsencher for inviting me to contribute to the **Iterative Methods In Rust** crate and for helpful feedback about this blog post and the implementation of reservoir sampling.*
+*Thanks to Daniel Vainsencher for inviting me to contribute to the **Iterative Methods** crate and for helpful feedback about this blog post and the implementation of reservoir sampling.*
 <!-- 
 
 Here is some code I typed into the md file:
