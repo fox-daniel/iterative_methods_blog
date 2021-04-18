@@ -91,25 +91,19 @@ while let Some(item) = stream.next() {
 ```
 <figcaption style="text-align:center;">Code Block 2</figcaption>
 
-The `map` adaptor uses a named closure to compute the mean and maximum index for each reservoir. Since the reservoir is a `Vec<Numbered<f64>>`, we use standard Rust `Iterator` methods. We need to extract the `count` field to update the maximum index present in the reservoir and expose the `item` field that has the value of the sample so we can compute the mean.  
+The `map` adaptor uses a named closure to compute the mean and maximum index for each reservoir. Since the reservoir is a `Vec<Numbered<f64>>`, we use standard Rust `Iterator` methods. We need to extract the `count` field to update the maximum index present in the reservoir and expose the `item` field that has the value of the sample so we can compute the mean. Applying the `.fold()` adaptor with the accumulator a tuple `(max_index, sum_of_values)` reduces the reservoir down to the pair needed, except that we still have to divide the sum by the capacity to obtain the mean.  
 ```rust, ignore
-let reservoir_mean_and_max_index = |reservoir: &Vec<Numbered<&f64>>| -> Numbered<f64> 
-{
-    let mut max_index = 0i64;
-    let mean: f64 = reservoir
-        .iter()
-        .map(|numbered| 
-            {
-            max_index = max(max_index, numbered.count);
-            numbered.item.unwrap()
-            })
-        .sum();
-    let mean = mean / (capacity as f64);
-    Numbered {
-        count: max_index,
-        item: Some(mean),
-    }
-};
+let reservoir_mean_and_max_index = |reservoir: &Vec<Numbered<f64>>| -> Numbered<f64> {
+        let result = reservoir.iter().fold((0, 0.), |acc, x| {
+            (cmp::max(acc.0, x.count), acc.1 + x.item.unwrap())
+        });
+        let max_index = result.0;
+        let mean = result.1 / (capacity as f64);
+        Numbered {
+            count: max_index,
+            item: Some(mean),
+        }
+    };
 ```
 <figcaption style="text-align:center;">Code Block 3</figcaption>
 
