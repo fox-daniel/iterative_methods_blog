@@ -26,7 +26,7 @@
 
 # Iterative Methods in Rust: Reservoir Sampling
 
-This is the third post in the series presenting the `Iterative Methods` Rust crate. If you haven't already, you may want to read the [first](http://daniel-vainsencher.github.io/book/iterative_methods_part_1.html) or [second](http://daniel-vainsencher.github.io/book/iterative_methods_part_2.html) post by [Daniel Vainsencher](https://github.com/daniel-vainsencher) before continuing here. As discussed in the earlier posts, the `Iterative Methods` crate has two motivations: 1) extend the idiomatic use of iterators and adaptors in Rust to `StreamingIterator`s and 2) expand the repertoire of iterative methods readily available in the Rust ecosystem. 
+This is the third post in the series presenting the `Iterative Methods` Rust crate. If you haven't already, you may want to read the [first](http://daniel-vainsencher.github.io/book/iterative_methods_part_1.html) or [second](http://daniel-vainsencher.github.io/book/iterative_methods_part_2.html) post by [Daniel Vainsencher](https://github.com/daniel-vainsencher) before continuing here. As discussed in the earlier posts, the `Iterative Methods` crate aims to expand the repertoire of iterative methods readily available in the Rust ecosystem. 
 
 This post describes how the `Iterative Methods` crate facilitates easy reservoir sampling of a `StreamingIterator`. [Reservoir sampling](https://en.wikipedia.org/wiki/Reservoir_sampling) produces an up-to-date and relatively low cost random sample of a large stream of data. For example, suppose you want to maintain an up-to-date sample of \\(k\\) tweets from a twitter feed. At any moment, a reservoir sample of the tweets is equivalent to a random sample of \\(k\\) items from the portion of the stream that has been processed at that moment. The reservoir sampling algorithm accomplishes this without needing to know the total number of samples in the stream and it updates the sample to take into account new behavior in the data that may not have been present initially. Below we'll see how to use reservoir sampling for `StreamingIterator`s in Rust. Using animations we can see how the reservoir samples stay up-to-date as the data stream exhibits new behavior. 
 
@@ -39,7 +39,7 @@ This post describes how the `Iterative Methods` crate facilitates easy reservoir
 
 ## The UI for Reservoir Sampling  
 
-The UI uses adaptors to transform the behavior of `StreamingIterator`s. Suppose that `stream` is a `StreamingIterator` with items of type `T`. We adapt that iterator using `reservoir_iterable(stream, capacity, rng)`, whose fields are 1) a streaming iterator, 2) the capacity or size of the reservoir sample, and 3) a choice of a random number generator. If the `rng` is left to `None`, then the default [`rand_pcg::Pcg64`](https://rust-random.github.io/book/intro.html) is used. Each item of the returned `StreamingIterator` is a `Vec<T>`, where the vector holds a reservoir sample.   
+The UI uses adaptors to transform the behavior of `StreamingIterator`s. Suppose that `stream` is a `StreamingIterator` with items of type `T`. We adapt that iterator using `reservoir_iterable(stream, capacity, rng)`, whose fields are 1) a streaming iterator, 2) the capacity or size of the reservoir sample, and 3) a choice of a random number generator. The default is to set `rng` to `None`so that [`rand_pcg::Pcg64`](https://rust-random.github.io/book/intro.html) is used. You also have the option of using a seedable `rng` that might be useful for debugging or testing. Each item of the returned `StreamingIterator` is a `Vec<T>`, where the vector holds a reservoir sample.   
 ```rust, ignore
 let stream = reservoir_iterable(stream, capacity, None);
 while let Some(item) = stream.next() {
@@ -91,7 +91,7 @@ while let Some(item) = stream.next() {
 ```
 <figcaption style="text-align:center;">Code Block 2</figcaption>
 
-The `map` adaptor uses a named closure to compute the mean and maximum index for each reservoir. Since the reservoir is a `Vec<Numbered<f64>>`, we use standard Rust `Iterator` methods. We need to extract the `count` field to update the maximum index present in the reservoir and expose the `item` field that has the value of the sample so we can compute the mean. Applying the `.fold()` adaptor with the accumulator a tuple `(max_index, sum_of_values)` reduces the reservoir down to the pair needed, except that we still have to divide the sum by the capacity to obtain the mean.  
+The `map` adaptor uses the named closure `reservoir_mean_and_max_index` to compute the mean and maximum index for each reservoir. Since the reservoir is a `Vec<Numbered<f64>>`, we use standard Rust `Iterator` methods. We need to extract the `count` field to update the maximum index present in the reservoir and expose the `item` field that has the value of the sample so we can compute the mean. Applying the `.fold()` adaptor with the accumulator a tuple `(max_index, sum_of_values)` reduces the reservoir down to the pair needed, except that we still have to divide the sum by the capacity to obtain the mean.  
 ```rust, ignore
 let reservoir_mean_and_max_index = |reservoir: &Vec<Numbered<f64>>| -> Numbered<f64> {
         let result = reservoir.iter().fold((0, 0.), |acc, x| {
