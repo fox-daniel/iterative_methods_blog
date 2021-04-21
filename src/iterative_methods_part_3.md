@@ -77,9 +77,9 @@ The animation in Figure 2 allows us to see how the reservoir distribution tracks
 In order to know which portion of the stream has been sampled for each reservoir, we'll prepare the stream by enumerating its items with the `enumerate()` adaptor. This wraps each item of a `StreamingIterator` in a `Numbered{count, item}` struct that contains the original item and the index of the item. All of the adaptors are lazy, so the enumeration is added on the fly as the stream is processed. With the enumeration added in, for each reservoir we can find the item with the largest index, which we'll name `max_index`. We compare the reservoir mean to the mean of the stream up to and including that index. 
 
 Here is the code that accomplishes this. The code is modular; once the data stream exists we adapt, adapt, adapt in whichever sequence is currently useful. Again, we suppose that `stream` is our `StreamingIterator` full of float samples from the pair of distributions as described above. The `stream` starts off with each item an `f64`; 
-- after the `enumerate` adaptor, the items are `Numbered<f64>` with indices that will allow us to calculate `max_index` for each reservoir
-- after the `reservoir_iterable()` each item is a reservoir sample in a `Vec<Numbered<f64>>`
-- and after the `map` adaptor each item is a `Numbered` struct containing the mean of the reservoir and the `max_index` indicating how much of the stream was sampled to obtain that reservoir.   
+- After the `enumerate` adaptor, the items are `Numbered<f64>` with indices that will allow us to calculate `max_index` for each reservoir;
+- After the `reservoir_iterable()` each item is a reservoir sample in a `Vec<Numbered<f64>>`;
+- The `map` adaptor uses the named closure `reservoir_mean_and_max_index` to compute the mean and maximum index for each reservoir.  After the `map` adaptor each item is a `Numbered` struct containing the mean of the reservoir and the `max_index` indicating how much of the stream was sampled to obtain that reservoir. See the source code for the wheels within wheels.  
 ```rust, ignore
 let stream = enumerate(stream);
 let stream = reservoir_iterable(stream, capacity, None);
@@ -90,22 +90,6 @@ while let Some(item) = stream.next() {
 }
 ```
 <figcaption style="text-align:center;">Code Block 2</figcaption>
-
-The `map` adaptor uses the named closure `reservoir_mean_and_max_index` to compute the mean and maximum index for each reservoir. Since the reservoir is a `Vec<Numbered<f64>>`, we use standard Rust `Iterator` methods. We need to extract the `count` field to update the maximum index present in the reservoir and expose the `item` field that has the value of the sample so we can compute the mean. Applying the `.fold()` adaptor with the accumulator a tuple `(max_index, sum_of_values)` reduces the reservoir down to the pair needed, except that we still have to divide the sum by the capacity to obtain the mean.  
-```rust, ignore
-let reservoir_mean_and_max_index = |reservoir: &Vec<Numbered<f64>>| -> Numbered<f64> {
-        let result = reservoir.iter().fold((0, 0.), |acc, x| {
-            (cmp::max(acc.0, x.count), acc.1 + x.item.unwrap())
-        });
-        let max_index = result.0;
-        let mean = result.1 / (capacity as f64);
-        Numbered {
-            count: max_index,
-            item: Some(mean),
-        }
-    };
-```
-<figcaption style="text-align:center;">Code Block 3</figcaption>
 
 Now let's visuallly compare the means of the reservoirs and the means of the portions of the stream from which the reservoir sample was drawn. In the figure below, we see that, informally speaking, the mean of the reservoir does a nice job of approximating the mean of the portion of the stream that has been sampled. 
 <figure>
@@ -137,7 +121,7 @@ while let Some(_item) = stream.next() {
     num_res += 1
 }
 ```
-<figcaption style="text-align:center;">Code Block 4</figcaption>
+<figcaption style="text-align:center;">Code Block 3</figcaption>
 
 The visualizations were generated from the data in the Yaml files using the [Plotly](https://plotly.com/python/) module in Python. In the future we hope to switch to an entirely Rusty solution using the [Plotters](https://docs.rs/plotters/0.3.0/plotters/) crate.
 
