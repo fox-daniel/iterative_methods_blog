@@ -7,7 +7,10 @@
 -->
 
 
-# Iterative Methods in Rust: Reservoir Sampling
+<center> <h1 style="margin:0;padding:0">Iterative Methods in Rust</h1></center>
+<center> <h2 style="margin:0;padding:0">Part 3: Reservoir Sampling </h2></center>
+<center> <h3 style="margin:0;padding:0;font-style:italic;">Daniel Fox </h3></center>
+
 
 This is the third post in the series presenting the `Iterative Methods` Rust crate. If you haven't already, you may want to read the [first](http://daniel-vainsencher.github.io/book/iterative_methods_part_1.html) or [second](http://daniel-vainsencher.github.io/book/iterative_methods_part_2.html) post by [Daniel Vainsencher](https://github.com/daniel-vainsencher) before continuing here. As discussed in the earlier posts, the `Iterative Methods` crate aims to expand the repertoire of iterative methods readily available in the Rust ecosystem. 
 
