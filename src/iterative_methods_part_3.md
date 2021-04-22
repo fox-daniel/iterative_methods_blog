@@ -123,7 +123,7 @@ while let Some(_item) = stream.next() {
 
 The head of the YAML file for the reservoir samples is shown below in Code Block 4. Each reservoir sample is in its own YAML document within a single file. 
 
-```
+```rust, ignore
 ---
 - - 0
   - 0.07243419605614634
