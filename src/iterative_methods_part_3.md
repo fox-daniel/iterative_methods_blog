@@ -136,7 +136,7 @@ The head of the YAML file for the reservoir samples is shown below in Code Block
 ```
 <figcaption style="text-align:center;">Code Block 4. The head of the YAML file containing the reservoir samples. The items in the reservoir are (index, value) pairs. </figcaption>
 
-The visualizations were generated from the data in the YAML files using the [Plotly](https://plotly.com/python/) module in Python. In the future we hope to switch to an entirely Rusty solution using the [Plotters](https://docs.rs/plotters/0.3.0/plotters/) crate.
+The visualizations were generated from the data in the YAML files using the [Plotly](https://plotly.com/python/) module in Python. In the future we hope to switch to an entirely Rusty solution using the [Plotters](https://docs.rs/plotters/0.3.0/plotters/) crate. Currently, our Rust program runs Python scripts using `std::process::Command` and writes errors they might throw to `stderr`.
 
 The iterator-adaptor idiom popular in Rust and other modern languages provides an ergonomic way to write code. As we build a repertoire of adaptors that implement useful iterative methods, we can easily deploy them in myriad combinations to meet our engineering needs. For example, the YAML adaptor can also be used for checkpoints, logs, and other streaming needs. If you try out the `Iterative Methods` crate, please send us feedback! 
 
