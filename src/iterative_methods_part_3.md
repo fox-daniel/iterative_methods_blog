@@ -18,7 +18,6 @@ This post describes how the `Iterative Methods` crate facilitates easy reservoir
 - Example: Visualizing the Evolving Distribution  
 - Example: Reservoir vs. Stream Means 
 - Example: Exporting Data for the Visualizations Using Adaptors
-- An Efficient Implementation of Reservoir Sampling
 
 ## The UI for Reservoir Sampling  
 
