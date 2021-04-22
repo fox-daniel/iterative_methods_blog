@@ -1,5 +1,8 @@
 <!--Aim for ~1500 words including code fragments.-->
 
+<!-- 
+DV: Again I'd consider putting small technical comments inside the code, and leaving the text and equations for the conceptual parts. For completeness of the picture, consider adding the constructor function as well, showing us the initiialization of skip etc.
+-->
 
 # Iterative Methods in Rust: An Optimal Implementation of Reservoir Sampling
 
