@@ -3,7 +3,7 @@ authors = ["Daniel Fox"]
 language = "en"
 multilingual = false
 src = "src"
-title = "Iterative Methods Blog"
+title = "Daniel Fox"
 
 [output.html]
 mathjax-support = true
