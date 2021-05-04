@@ -101,22 +101,31 @@ How did we make the visualizations, you ask? Why, by exporting the data with mor
 Finally, the only thing we do inside the loop is count the total number of reservoir samples that were made. This is helpful for initializing array sizes when making the visualizations. Here is the code:
 
 ```rust, ignore
-// Enumerate the items in the stream; item type is now Numbered<f64>{count: index, item: f64 value}
+// Enumerate the items in the stream; item type is now 
+// Numbered<f64>{count: index, item: f64 value}
 let stream = enumerate(stream);
-// Write the enumerated stream to YAML as a side effect, passing through the enumerated items
+// Write the enumerated stream to YAML as a side effect, 
+// passing through the enumerated items
 let stream = write_yaml_documents(stream, population_file.to_string())
     .expect("Create File and initialize yaml iter failed.");
 // Convert items to reservoir samples of type Vec<Numbered<f64>>	
 let stream = reservoir_iterable(stream, capacity, None);
 // Write the reservoirs to YAML as a side effect
-let stream = write_yaml_documents(stream, reservoir_samples_file.to_string())
-    .expect("Create File and initialize yaml iter failed.");
-// Convert items to Numbered<f64>{count: max_index, item: reservoir mean} using the named closure reservoir_mean_and_max_index 
+let stream = write_yaml_documents(
+        stream, 
+        reservoir_samples_file.to_string()
+        ).expect("Create File and initialize yaml iter failed.");
+// Convert items to 
+// Numbered<f64>{count: max_index, item: reservoir mean} 
+// using the named closure reservoir_mean_and_max_index 
 let stream = stream.map(reservoir_mean_and_max_index);
 // Write these new items to YAML as side effect
-let mut stream = write_yaml_documents(stream, reservoir_means_file.to_string())
-    .expect("Create File and initialize yaml iter failed.");
-// num_res is used in the Python script for visualizations to initialize array sizes
+let mut stream = write_yaml_documents(
+        stream, 
+        reservoir_means_file.to_string()
+        ).expect("Create File and initialize yaml iter failed.");
+// num_res is used in the Python script for visualizations to 
+// initialize array sizes
 let mut num_res = 0;
 while let Some(_item) = stream.next() {
     num_res += 1
