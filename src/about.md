@@ -1,0 +1,6 @@
+With PhDs in Music from The Graduate Center, CUNY (2020) and Mathematics from Duke University (2005), Daniel Fox brings both depth and breadth to his current work in data science and engineering. Recent projects include showing [gender bias](https://github.com/fox-daniel/Genre) in music genre labels on Wikipedia and implementing an optimal [reservoir sampling algorithm](https://fox-daniel.github.io/iterative_methods_blog/book/iterative_methods_part_3.html) for an open source library in Rust. His [math research](https://www.researchgate.net/profile/Daniel_Fox21/research) has appeared in the Transactions of the American Mathematical Society and Communications in Analysis and Geometry; his [writing on music](https://thoughtstoodefinite.com/publications/) has appeared in Perspectives of New Music and Hyperallergic. The Jack Quartet and Talea Ensemble are among the virtuoso ensembles to perform his [compositions](https://thoughtstoodefinite.com/listen/). 
+
+- [GitHub](https://github.com/fox-daniel)
+- [LinkedIn](https://www.linkedin.com/in/daniel-fox-aaa06992/)
+- [ResearchGate](https://www.researchgate.net/profile/Daniel_Fox21/research)
+- [Music](https://thoughtstoodefinite.com).

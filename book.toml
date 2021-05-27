@@ -1,0 +1,12 @@
+[book]
+authors = ["Daniel Fox"]
+language = "en"
+multilingual = false
+src = "src"
+title = "Daniel Fox"
+
+[output.html]
+mathjax-support = true
+default-theme = "coal"
+preferred-dark-theme = "navy"
+
